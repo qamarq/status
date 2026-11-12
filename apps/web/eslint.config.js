@@ -1,6 +1,6 @@
 import { solvro } from "@solvro/config/eslint";
 
-// Solvro's type-aware TypeScript rules; Vue SFCs are checked by vue-tsc.
+// Solvro's type-aware TypeScript rules.
 export default solvro(
   {
     files: ["**/*.ts"],

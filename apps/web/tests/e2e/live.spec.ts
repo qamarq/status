@@ -20,15 +20,14 @@ test("static OCI frontend renders the live publisher contract", async ({
   const currentResponse = await response;
   const snapshot = currentSchema.parse(await currentResponse.json());
   const services = snapshot.services.filter((service) => !service.hidden);
-  await expect(page.locator(".service")).toHaveCount(services.length);
-  const hostnames = await page.locator(".hostname").allTextContents();
-  const ids = hostnames.map((text) => text.split("·", 1)[0]!.trim());
+  await expect(page.locator(".svc")).toHaveCount(services.length);
+  const ids = await page.locator(".svc-host").allTextContents();
   expect(ids.sort((a, b) => a.localeCompare(b))).toEqual(
     services.map((service) => service.id).sort((a, b) => a.localeCompare(b)),
   );
   for (const status of ["healthy", "down", "unknown"] as const) {
     const now = Date.now() / 1000;
-    await expect(page.locator(`.state.${status}`)).toHaveCount(
+    await expect(page.locator(`.svc.st-${status}`)).toHaveCount(
       services.filter(
         (service) => effectiveStatus(service, snapshot, now) === status,
       ).length,
