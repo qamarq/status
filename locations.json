@@ -10,6 +10,11 @@
       "id": "pve",
       "name": "pve",
       "url": "https://beacon-pve.kamilmarczak.pl"
+    },
+    {
+      "id": "ovh",
+      "name": "OVH",
+      "url": "https://beacon-ovh.kamilmarczak.pl"
     }
   ]
 }
