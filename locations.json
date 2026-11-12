@@ -3,8 +3,13 @@
   "locations": [
     {
       "id": "pve2",
-      "name": "Dom",
-      "url": "https://beacon.kamilmarczak.pl"
+      "name": "pve2",
+      "url": "https://beacon-pve2.kamilmarczak.pl"
+    },
+    {
+      "id": "pve",
+      "name": "pve",
+      "url": "https://beacon-pve.kamilmarczak.pl"
     }
   ]
 }
