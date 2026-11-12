@@ -1,0 +1,58 @@
+name: CD / Publisher release
+
+on:
+  push:
+    tags:
+      - publisher-v*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.server_url == 'https://github.com'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Rust
+        run: rustup toolchain install 1.96.0 --profile minimal
+
+      - name: Install cross
+        run: cargo +1.96.0 install cross --git https://github.com/cross-rs/cross --rev 526d03ddcd2f70e683074b3ea6f75ed300f33132 --locked
+
+      - name: Build static executable
+        env:
+          CROSS_CONTAINER_ENGINE: docker
+        run: cross +1.96.0 build --locked --release -p beacon-publisher --target x86_64-unknown-linux-musl
+
+      - name: Verify executable is static
+        run: |
+          binary=target/x86_64-unknown-linux-musl/release/beacon-publisher
+          if readelf -l "$binary" | grep -q INTERP || readelf -d "$binary" | grep -q NEEDED; then
+            echo 'publisher requires a dynamic runtime' >&2
+            exit 1
+          fi
+
+      - name: Package executable
+        run: |
+          mkdir dist
+          cp target/x86_64-unknown-linux-musl/release/beacon-publisher dist/beacon-publisher-x86_64-linux
+          cd dist && sha256sum beacon-publisher-x86_64-linux > beacon-publisher-x86_64-linux.sha256
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v5
+        with:
+          name: beacon-publisher-x86_64-linux
+          path: dist/*
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/publisher-v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "beacon-publisher ${TAG#publisher-v}" --generate-notes
