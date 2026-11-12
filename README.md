@@ -1,5 +1,9 @@
 # Beacon
 
+> Based on [Beacon](https://github.com/kguzek/beacon) by Konrad Guzek ([@kguzek](https://github.com/kguzek)),
+> licensed under the GNU AGPL v3.0. This repository is a modified copy maintained by Kamil Marczak; the original
+> history is preserved and the original license applies (see [LICENSE](LICENSE)).
+
 Beacon turns existing Prometheus and Blackbox Exporter checks into a public status page. It shows how services are doing now and over time, without exposing your monitoring setup or running a second system to check the same services.
 
 ## How it works
