@@ -7,7 +7,7 @@ use std::{collections::HashSet, fmt, time::Duration};
 use url::Url;
 
 /// Default page for clients that are not told otherwise.
-pub const DEFAULT_STATUS_PAGE_URL: &str = "https://status.guzek.uk";
+pub const DEFAULT_STATUS_PAGE_URL: &str = "https://status.kamilmarczak.pl";
 
 const TIMEOUT: Duration = Duration::from_secs(8);
 const MAX_BYTES: usize = 32 * 1024 * 1024;

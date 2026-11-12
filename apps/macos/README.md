@@ -13,10 +13,10 @@ A menu-bar companion for a Beacon status page. Its icon shows the page's overall
 
 Click the icon to see each monitoring location's own counts and the services it doesn't currently confirm as healthy.
 
-It polls `https://status.guzek.uk` every 60 seconds. To use another page:
+It polls `https://status.kamilmarczak.pl` every 60 seconds. To use another page:
 
 ```sh
-defaults write uk.guzek.beacon.menu statusPageURL https://status.example.org
+defaults write pl.kamilmarczak.status.menu statusPageURL https://status.example.org
 ```
 
 ## Build

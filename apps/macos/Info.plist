@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>BeaconMenu</string>
 	<key>CFBundleIdentifier</key>
-	<string>uk.guzek.beacon.menu</string>
+	<string>pl.kamilmarczak.status.menu</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

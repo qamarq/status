@@ -6,7 +6,7 @@ import Foundation
 @MainActor
 final class StatusModel: ObservableObject {
     static let refreshInterval: Duration = .seconds(60)
-    /// Optional override: `defaults write uk.guzek.beacon.menu statusPageURL <url>`.
+    /// Optional override: `defaults write pl.kamilmarczak.status.menu statusPageURL <url>`.
     static let pageURLKey = "statusPageURL"
 
     @Published private(set) var snapshot: Snapshot?

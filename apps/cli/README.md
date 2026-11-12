@@ -3,7 +3,7 @@
 Shows a Beacon status page's current status in [Waybar](https://github.com/Alexays/Waybar), or prints it as JSON for scripts. It contacts the same publishers as the page, listed in the page's `locations.json`, and applies the same freshness and combining rules. History is left to the web page.
 
 ```sh
-beacon-cli                                    # Waybar JSON for https://status.guzek.uk
+beacon-cli                                    # Waybar JSON for https://status.kamilmarczak.pl
 beacon-cli --status-page-url https://status.example.org
 beacon-cli --json | jq .summary.headline      # full snapshot
 ```
@@ -15,7 +15,7 @@ beacon-cli --json | jq .summary.headline      # full snapshot
   "exec": "beacon-cli",
   "return-type": "json",
   "interval": 60,
-  "on-click": "xdg-open https://status.guzek.uk"
+  "on-click": "xdg-open https://status.kamilmarczak.pl"
 }
 ```
 
