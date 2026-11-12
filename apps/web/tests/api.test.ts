@@ -136,6 +136,20 @@ describe("public contract and presentation", () => {
     expect(status()).toBe("down");
     expect(combinedStatus("example.org", [], 150)).toBe("unknown");
   });
+  it("ignores locations whose inventory does not list the service", () => {
+    const home = observer("home", snapshot("home"));
+    const remote = observer("remote", snapshot("remote"));
+    remote.current!.services = remote.current!.services.filter(
+      (service) => service.id !== "example.org",
+    );
+    expect(combinedStatus("example.org", [home, remote], 150)).toBe("healthy");
+    home.current!.services[0]!.status = "down";
+    expect(combinedStatus("example.org", [home, remote], 150)).toBe("down");
+    remote.current = null;
+    remote.reachable = false;
+    home.current!.services[0]!.status = "healthy";
+    expect(combinedStatus("example.org", [home, remote], 150)).toBe("mixed");
+  });
   it("distinguishes empty, unknown, incomplete and outage summaries without hidden services", () => {
     const current = snapshot();
     const observers = [observer("primary", current)];

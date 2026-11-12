@@ -194,6 +194,12 @@ fn observation<'a>(observer: &'a Observer, id: &str) -> Option<&'a CurrentServic
         .find(|service| service.service.id == id)
 }
 
+/// A location whose inventory doesn't list a service doesn't monitor it, so it
+/// doesn't count for that service. Unknown inventory (no snapshot yet) still counts.
+fn monitors(observer: &Observer, id: &str) -> bool {
+    observer.current.is_none() || observation(observer, id).is_some()
+}
+
 fn observed_status(observer: &Observer, id: &str, now: f64) -> Status {
     effective_status(observation(observer, id), observer.current.as_ref(), now)
 }
@@ -240,6 +246,10 @@ pub fn visible_inventory(observers: &[Observer]) -> Vec<Service> {
 }
 
 pub fn combined_status(id: &str, observers: &[Observer], now: f64) -> HealthState {
+    let observers: Vec<&Observer> = observers
+        .iter()
+        .filter(|observer| monitors(observer, id))
+        .collect();
     let confirmed: Vec<bool> = observers
         .iter()
         .map(|observer| observer.reachable && observed_status(observer, id, now) == Status::Healthy)
@@ -284,9 +294,10 @@ pub fn summarize(observers: &[Observer], now: f64) -> Summary {
         .map(|observer| {
             observer.reachable
                 && total > 0
-                && inventory
-                    .iter()
-                    .all(|service| observed_status(observer, &service.id, now) == Status::Healthy)
+                && inventory.iter().all(|service| {
+                    !monitors(observer, &service.id)
+                        || observed_status(observer, &service.id, now) == Status::Healthy
+                })
         })
         .collect();
     let scope_mixed = all_healthy_from.iter().any(|&h| h) && !all_healthy_from.iter().all(|&h| h);

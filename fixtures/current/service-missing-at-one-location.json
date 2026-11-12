@@ -105,15 +105,15 @@
     "services": {
       "alpha.org": "healthy",
       "beta.org": "healthy",
-      "gamma.org": "mixed"
+      "gamma.org": "healthy"
     },
-    "headline": "Service status mixed",
+    "headline": "All services online",
     "counts": {
-      "healthy": 2,
-      "mixed": 1,
+      "healthy": 3,
+      "mixed": 0,
       "down": 0,
       "unknown": 0
     },
-    "breakdown": "2 online · 1 mixed"
+    "breakdown": "3 online"
   }
 }

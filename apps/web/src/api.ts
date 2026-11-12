@@ -340,6 +340,17 @@ export type HealthState = Observation["status"] | "mixed";
 function reportingObservers(observers: Observer[]) {
   return observers.filter((observer) => !observer.loading);
 }
+// A location whose inventory doesn't list a service doesn't monitor it, so it
+// doesn't count for that service. Unknown inventory (no snapshot yet) still counts.
+function isMonitoring(observer: Observer, id: string) {
+  return (
+    observer.current === null ||
+    observer.current.services.some((service) => service.id === id)
+  );
+}
+function observersOf(observers: Observer[], id: string) {
+  return observers.filter((observer) => isMonitoring(observer, id));
+}
 function observedStatus(observer: Observer, id: string, now: number) {
   return effectiveStatus(
     observer.current?.services.find((service) => service.id === id),
@@ -354,6 +365,7 @@ export function combinedStatus(
   observers: Observer[],
   now: number,
 ): HealthState {
+  observers = observersOf(observers, id);
   const reporting = reportingObservers(observers);
   const confirmed = reporting.map(
     (observer) =>
@@ -409,7 +421,8 @@ function describeMixed(
     const healthy: string[] = [];
     const other: string[] = [];
     const kinds = new Set<string>();
-    for (const observer of reportingObservers(observers)) {
+    const reporting = reportingObservers(observersOf(observers, service.id));
+    for (const observer of reporting) {
       const state = observedStatus(observer, service.id, now);
       if (state === "healthy" && observer.reachable) {
         healthy.push(observer.config.name);
@@ -476,7 +489,9 @@ export function healthSummary(
       observer.reachable &&
       total > 0 &&
       services.every(
-        (service) => observedStatus(observer, service.id, now) === "healthy",
+        (service) =>
+          !isMonitoring(observer, service.id) ||
+          observedStatus(observer, service.id, now) === "healthy",
       ),
   );
   const isMixed =
