@@ -14,6 +14,7 @@ test("renders sample data with sources, groups and filters", async ({
   await expect(page.locator(".src")).toHaveCount(3);
   await expect(page.locator(".svc")).toHaveCount(24);
   await expect(page.locator(".svc .tag")).toHaveCount(16);
+  await expect(page.locator(".svc .row-sum")).toHaveCount(24);
 
   await page.locator('[data-act="filter"][data-filter="vpn"]').click();
   await expect(page.locator(".svc")).toHaveCount(16);
@@ -26,9 +27,15 @@ test("renders sample data with sources, groups and filters", async ({
   await expect(page.locator(".svc .svc-host")).toHaveText(
     "jellyfin.kamilmarczak.pl",
   );
+  await expect(page.locator(".svc .row-sum")).toHaveCount(1);
+  await expect(page.locator(".svc .row:not(.row-sum)")).toHaveCount(0);
+  await page.locator(".svc .svc-tog").click();
+  await expect(page.locator(".svc .row:not(.row-sum)")).toHaveCount(3);
   await expect(
     page.locator(".svc .row.missing", { hasText: "OVH" }),
   ).toContainText("VPN only");
+  await page.locator(".svc .svc-tog").click();
+  await expect(page.locator(".svc .row:not(.row-sum)")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

@@ -162,6 +162,10 @@ const I18N = {
     kb: "/ szukaj · 1 2 3 okno · R odśwież",
     win: { hour: "1 h", day: "24 h", month: "30 dni" },
     ungrouped: "Pozostałe",
+    all_srcs: (n) => `${n} ${plPlural(n, "źródło", "źródła", "źródeł")}`,
+    show_srcs: "Pokaż źródła",
+    hide_srcs: "Ukryj źródła",
+    srcs_ok: (ok, n) => `${ok} z ${n} źródeł bez błędów`,
   },
   en: {
     refreshIn: (s) => `refresh in ${s}s`,
@@ -252,6 +256,10 @@ const I18N = {
     kb: "/ search · 1 2 3 window · R refresh",
     win: { hour: "1 h", day: "24 h", month: "30 d" },
     ungrouped: "Other",
+    all_srcs: (n) => `${n} ${n === 1 ? "source" : "sources"}`,
+    show_srcs: "Show sources",
+    hide_srcs: "Hide sources",
+    srcs_ok: (ok, n) => `${ok} of ${n} sources without failures`,
   },
 };
 const L = (k, ...a) => {
@@ -273,7 +281,7 @@ const S = {
   view: load("view", "groups"),
   q: params.get("q") || "",
   collapsed: new Set(load("collapsed", [])),
-  expanded: new Set(params.get("q") ? [] : []),
+  expanded: new Set(load("expanded", [])),
   lang: load(
     "lang",
     (navigator.language || "pl").toLowerCase().startsWith("pl") ? "pl" : "en",
@@ -649,6 +657,32 @@ const FAV = {
   unknown: "#7f8794",
 };
 
+function combinedBuckets(per, n) {
+  const withData = per.filter((p) => p.buckets);
+  if (!withData.length) return null;
+  return Array.from({ length: n }, (_, i) => {
+    const locs = withData
+      .map((p) => ({ name: p.loc.name, state: bState(p.buckets[i]) }))
+      .filter((x) => x.state !== "unknown");
+    const ok = locs.filter((x) => x.state === "healthy").length;
+    const state = !locs.length
+      ? "unknown"
+      : ok === locs.length
+        ? "healthy"
+        : ok * 2 >= locs.length
+          ? "degraded"
+          : "down";
+    return { state, ok, n: locs.length, locs };
+  });
+}
+
+function combinedBarHTML(cells, key, n, meta) {
+  if (!cells)
+    return `<div class="bar loading" aria-hidden="true">${"<i></i>".repeat(n)}</div>`;
+  S.barCache.set(key, { ...meta, cells });
+  return `<div class="bar" data-key="${esc(key)}" role="img">${cells.map((c, i) => `<i class="b-${c.state}" data-i="${i}"></i>`).join("")}</div>`;
+}
+
 function barHTML(buckets, key, n, meta) {
   if (!buckets)
     return `<div class="bar loading" aria-hidden="true">${"<i></i>".repeat(n)}</div>`;
@@ -872,16 +906,33 @@ function sourceRow(s, loc, M) {
   </div>`;
 }
 
+function summaryRow(s, M) {
+  const seen = s.per.map((p) => p.entry.observed_at).filter(Boolean);
+  const last = seen.length ? Math.max(...seen) : null;
+  const lat = s.state === "down" ? L("st_down") : fmtMs(s.lat);
+  return `<div class="row row-sum st-${s.state}">
+    <span class="dot"></span>
+    <span class="r-name">${esc(L("all_srcs", s.per.length))}</span>
+    ${combinedBarHTML(combinedBuckets(s.per, M.n), `sum:${s.id}`, M.n, { start: M.start, size: M.size })}
+    <span class="r-v r-lat strong">${esc(lat)}</span>
+    <span class="r-v ${upClass(s.up)}">${esc(fmtUp(s.up))}</span>
+    <span class="r-v r-ago">${last ? `<span data-ago="${last}"></span>` : "—"}</span>
+  </div>`;
+}
+
 function cardHTML(s, M) {
   const host = isHost(s.id)
     ? `<a class="svc-host" href="https://${esc(s.id)}" target="_blank" rel="noopener noreferrer" title="${esc(L("open_title"))}">${esc(s.id)}</a>`
     : `<span class="svc-host">${esc(s.id)}</span>`;
-  return `<article class="svc st-${s.state}" data-id="${esc(s.id)}">
+  const open = S.expanded.has(s.id);
+  return `<article class="svc st-${s.state}${open ? " open" : ""}" data-id="${esc(s.id)}">
     <div class="svc-h">
+      <button class="svc-tog" data-act="toggle-svc" data-id="${esc(s.id)}" aria-expanded="${open}" title="${esc(L(open ? "hide_srcs" : "show_srcs"))}" aria-label="${esc(L(open ? "hide_srcs" : "show_srcs"))}">▼</button>
       <span class="svc-name">${esc(s.name)}</span>${s.requires_vpn ? '<span class="tag">VPN</span>' : ""}${host}
       <span class="svc-r"><span class="svc-st">${esc(L("st_" + s.state))}</span><span class="svc-up ${upClass(s.up)}">${esc(fmtUp(s.up))}</span><button class="copy" data-act="copy" data-id="${esc(s.id)}">${esc(L("copy"))}</button></span>
     </div>
-    ${S.locations.map((loc) => sourceRow(s, loc, M)).join("")}
+    ${summaryRow(s, M)}
+    ${open ? S.locations.map((loc) => sourceRow(s, loc, M)).join("") : ""}
   </article>`;
 }
 
@@ -1105,6 +1156,8 @@ function openSvc(id) {
   }
   S.collapsed.delete(s.group);
   save("collapsed", [...S.collapsed]);
+  S.expanded.add(id);
+  save("expanded", [...S.expanded]);
   renderChips(S.model);
   renderList();
   updateAgo();
@@ -1158,6 +1211,12 @@ document.addEventListener("click", (e) => {
     $("#toggleAll").textContent = L(
       S.collapsed.size ? "expand_all" : "collapse_all",
     );
+  } else if (act === "toggle-svc") {
+    const id = a.dataset.id;
+    S.expanded.has(id) ? S.expanded.delete(id) : S.expanded.add(id);
+    save("expanded", [...S.expanded]);
+    renderList();
+    updateAgo();
   } else if (act === "toggle-all") {
     if (S.collapsed.size) S.collapsed.clear();
     else
@@ -1265,10 +1324,11 @@ function showTip(cell) {
   if (cell === tipCell) return;
   const bar = cell.parentElement,
     c = S.barCache.get(bar.dataset.key);
-  if (!c || !c.buckets) return hideTip();
+  if (!c || !(c.buckets || c.cells)) return hideTip();
   if (tipCell) tipCell.classList.remove("hl");
   tipCell = cell;
   cell.classList.add("hl");
+  if (c.cells) return showCombinedTip(cell, c);
   const i = +cell.dataset.i,
     b = c.buckets[i],
     st = bState(b),
@@ -1285,6 +1345,20 @@ function showTip(cell) {
     <div class="tt-s st-${st}"><span class="dot"></span>${esc(L("st_" + st))}</div>
     <div class="tt-d">${n < 0.5 ? esc(L("no_data")) : `${esc(L("checks", Math.round(b.ok), Math.round(n)))} · ${esc(fmtUp(b.ok / n))}`}</div>
     ${codes ? `<div class="tt-d">${esc(codes)}</div>` : ""}`;
+  placeTip(cell);
+}
+function showCombinedTip(cell, c) {
+  const i = +cell.dataset.i,
+    b = c.cells[i],
+    t0 = c.start + i * c.size,
+    t1 = Math.min(nowS(), t0 + c.size);
+  tip.innerHTML = `<div class="tt-t">${esc(fmtRange(t0, t1, c.size))}</div>
+    <div class="tt-s st-${b.state}"><span class="dot"></span>${esc(L("st_" + b.state))}</div>
+    <div class="tt-d">${b.n ? esc(L("srcs_ok", b.ok, b.n)) : esc(L("no_data"))}</div>
+    ${b.locs.map((l) => `<div class="tt-d st-${l.state}"><span class="dot"></span> ${esc(l.name)}: ${esc(L("st_" + l.state))}</div>`).join("")}`;
+  placeTip(cell);
+}
+function placeTip(cell) {
   const r = cell.getBoundingClientRect(),
     tw = tip.offsetWidth,
     th = tip.offsetHeight;

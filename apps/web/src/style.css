@@ -544,6 +544,31 @@ h2 {
   padding: 11px 16px;
   flex-wrap: wrap;
 }
+.svc-tog {
+  width: 16px;
+  color: var(--faint);
+  font-size: 10px;
+  align-self: center;
+  transform: rotate(-90deg);
+  transition: transform 0.15s;
+}
+.svc-tog:hover {
+  color: var(--text);
+}
+.svc.open .svc-tog {
+  transform: rotate(0deg);
+}
+.svc.open .row-sum {
+  background: var(--panel-2);
+}
+#tip .tt-d.st-healthy .dot,
+#tip .tt-d.st-degraded .dot,
+#tip .tt-d.st-down .dot,
+#tip .tt-d.st-unknown .dot {
+  width: 6px;
+  height: 6px;
+  vertical-align: middle;
+}
 .svc-name {
   font-weight: 600;
   font-size: 14.5px;
