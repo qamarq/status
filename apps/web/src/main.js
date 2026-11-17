@@ -61,6 +61,7 @@ const WINDOWS = {
   month: { secs: 2592000, buckets: 90, mbuckets: 45, refresh: 1800 },
 };
 const CURRENT_EVERY = 30;
+const MIN_INCIDENT_SECONDS = 60;
 const mqMobile = matchMedia("(max-width: 640px)");
 const mqLight = matchMedia("(prefers-color-scheme: light)");
 const nBuckets = (w) =>
@@ -574,7 +575,9 @@ function incidents() {
         }
     } else out.push({ ...e, locs: [...e.locs], locIds: [...e.locIds] });
   }
-  return out.sort((a, b) => b.ongoing - a.ongoing || b.end - a.end);
+  return out
+    .filter((i) => i.end - i.start > MIN_INCIDENT_SECONDS)
+    .sort((a, b) => b.ongoing - a.ongoing || b.end - a.end);
 }
 
 function buildModel() {
